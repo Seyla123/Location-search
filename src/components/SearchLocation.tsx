@@ -1,51 +1,74 @@
+/**
+ * SearchLocation component renders a search input field and a list of search results.
+ * The search results are fetched from the Nominatim API when the user submits the search form.
+ * The user can select a search result to view its details.
+ *
+ * @param {LocationSearchProps} props - The props for the SearchLocation component.
+ * @prop {function} onPlaceClick - The function to call when the user selects a search result.
+ * @returns {React.ReactElement} The SearchLocation component.
+ */
+
 import { useState } from 'react'
 import {
     Box,
     Stack,
-    Typography,
     Paper,
     InputBase,
     IconButton,
+    Typography,
 } from '@mui/material'
 import { Search as SearchIcon, Menu as MenuIcon } from '@mui/icons-material';
 import { Place } from '../types/Place';
+import LocationCard from './LocationCard';
+import { search } from '../api/searchApi';
 
 interface LocationSearchProps {
     onPlaceClick: (place: Place) => void,
 }
-function SearchLocation({ onPlaceClick }: LocationSearchProps) {
 
-    const [searchValue, setSearchValue] = useState('');
-    const handleSelectPlace = (place: Place) => {
-        onPlaceClick(place);
-    };
+const SearchLocation = ({ onPlaceClick }: LocationSearchProps) => {
+    const [searchValue, setSearchValue] = useState(''); // The search input value
+    const [places, setPlaces] = useState<Place[]>([]); // The list of search results
 
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchValue(event.target.value);
-    };
+    const handleSelectPlace = (place: Place) => onPlaceClick(place);
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => setSearchValue(event.target.value);
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        console.log('Search Button Clicked', searchValue);
+        const result = await search(searchValue);
+        setPlaces(result);
     };
+
+    const handleClear = () => {
+        setPlaces([]);
+        setSearchValue('');
+    };
+
+    const renderContent = (places: Place[]) => {
+        if (places.length === 0) {
+            return <Typography>No Results Found</Typography>;
+        }
+
+        return places.map((place) => (
+            <LocationCard
+                key={place.id}
+                place={place}
+                onPlaceClick={handleSelectPlace}
+            />
+        ));
+    };
+
     return (
-        <Box
-            sx={{
-                width: '100%',
-                minWidth: 400,
-                maxWidth: 500,
-                height: '100vh',
-                p: { xs: 2, sm: 3 }, // Responsive padding
-            }}
-        >
-            <Stack direction="column" gap={3}>
+        <Box sx={containerStyle}>
+            <Stack direction="column" gap={1}>
                 {/* Search Text Field */}
                 <Paper
                     onSubmit={handleSubmit}
                     component="form"
-                    sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', minWidth: '100%' }}
+                    sx={searchStyle}
                 >
-                    <IconButton sx={{ p: '10px' }} aria-label="menu">
+                    <IconButton sx={{ p: '10px' }} aria-label="menu" onClick={handleClear}>
                         <MenuIcon />
                     </IconButton>
                     <InputBase
@@ -58,67 +81,45 @@ function SearchLocation({ onPlaceClick }: LocationSearchProps) {
                     <IconButton type="submit" sx={{ p: '10px' }} aria-label="search">
                         <SearchIcon />
                     </IconButton>
+                    {/* Search Results */}
                 </Paper>
-                {/* Search Results */}
-                <Stack gap={2} >
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            fontSize: { xs: '1.2rem', sm: '1.5rem' }  // Responsive font size
-                        }}
-                    >
-                        Search Results
-                    </Typography>
-                    <Stack
-            gap={1}
-            sx={{
-                border: '0.5px solid gray',
-                p: 2,
-                borderRadius: '10px',
-                backgroundColor: '#f9f9f9', // Light background color for better contrast
-                transition: '0.3s', // Smooth transition for hover effects
-                '&:hover': {
-                    boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)', // Shadow on hover
-                    borderColor: '#007bff', // Change border color on hover
-                },
-            }}
-        >
-            <Typography
-                variant="body1"
-                textTransform="capitalize"
-                fontWeight={400}
-                sx={{
-                    color: '#333', // Darker text color for better readability
-                    fontSize: { xs: '1rem', sm: '1.2rem' }, // Responsive font size
-                }}
-            >
-                Siem Reap
-            </Typography>
-            <Stack>
-                <Typography
-                    variant="body2"
-                    sx={{
-                        color: '#555', // Slightly lighter text color
-                        fontSize: { xs: '0.875rem', sm: '1rem' }, // Responsive font size
-                    }}
-                >
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                </Typography>
-                <Typography
-                    variant="body2"
-                    sx={{
-                        color: '#555',
-                        fontSize: { xs: '0.875rem', sm: '1rem' },
-                    }}
-                >
-                    382423 234942943 2348.
-                </Typography>
-            </Stack>
-        </Stack>
-                </Stack>
+                <Box gap={1} sx={{ display: 'flex', flexDirection: 'column', p: 2 }}>
+                    {renderContent(places)}
+                </Box>
             </Stack>
         </Box>
     );
-}
+};
 
 export default SearchLocation;
+
+const containerStyle = {
+    width: '100%',
+    position: 'absolute',
+    top: 24,
+    left: '50%',
+    transform: 'translate(-50%, -0%)',
+    backgroundColor: '#fff',
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
+    boxSizing: 'border-box',
+    zIndex: 1000,
+    borderRadius: '10px',
+    maxWidth: 500,
+    '@media (max-width: 600px)': {
+        width: '100vw',
+        top: 0,
+        left: 0,
+        transform: 'none',
+        borderRadius: 0,
+    },
+};
+
+const searchStyle = {
+    p: '2px 4px',
+    display: 'flex',
+    alignItems: 'center',
+    minWidth: '100%',
+    flexDirection: 'row',
+    boxShadow: 'none',
+};
+

@@ -1,0 +1,7 @@
+@media (max-width: 600px){
+    .leaflet-control-zoom {
+        top: 600px !important; /* Adjust the distance from the bottom as needed */
+        left: 10px !important; /* Adjust the left position */
+      }
+    
+  }
